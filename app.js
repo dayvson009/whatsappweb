@@ -90,7 +90,7 @@ const buttonCreate = async (number, msg) => {
 
   btns.slice(1,5).forEach(item => buttons.push({body:item}))
   console.log(buttons)
-  console.log("=====================================")
+  console.log("=================CRIANDO - BOTAO====================")
   console.log(buttonBody,buttons,"-","Escolha uma opção")
 
   const button = await new Buttons(buttonBody,buttons,"-","Escolha uma opção");
@@ -109,54 +109,87 @@ const buttonCreate = async (number, msg) => {
 
 }
 
+const listCreate = async (number, msg) => {
+  const lista = msg.split('##')
+
+  listBody = lista[0]
+  
+  const listItens = []
+
+  lista.slice(1,lista.length).forEach(item => listItens.push({title:item, description: ''}))
+  console.log("===============CRIANDO - LISTA======================")
+
+  let sections = [{title:'Opções',rows:listItens}];
+
+  let list = await new List(listBody,'Clique e Escolha uma Opção',sections,'','© SegSat');
+
+  client.sendMessage(number, list).then(response => {
+    res.status(200).json({
+      status: true,
+      response: response
+    });
+  }).catch(err => {
+    res.status(500).json({
+      status: false,
+      response: err
+    });
+  });
+
+}
+
 client.on('message', async msg => {
-console.log(msg)
-  const chat = await msg.getChat()
-  const contact = await msg.getContact()
-  const name = contact.name || contact.pushname
+  if (msg.type != "e2e_notification"){
 
-  const existInList = noBotSend.findIndex(number => number.phoneNumber == contact.number)
-
-  if (msg.body !== null && chat.isGroup == false && existInList < 0) {
-    noBotSend.push({phoneNumber: contact.number, timestamp: msg.timestamp})
+    console.log(msg)
+    const chat = await msg.getChat()
+    const contact = await msg.getContact()
+    const name = contact.name || contact.pushname
+    
+    const existInList = noBotSend.findIndex(number => number.phoneNumber == contact.number)
+    
+    if (msg.body !== null && chat.isGroup == false && existInList < 0) {
+      noBotSend.push({phoneNumber: contact.number, timestamp: msg.timestamp})
       
-    let sections = [{title:'Opções',rows:[
+      let sections = [{title:'Opções',rows:[
         {title:'Meu carro esta atrasado no APP', description: 'Não sei o que fazer, preciso de ajuda'},
         {title:'Meu veiculo ta com posição atrasada!', description: 'Preciso resolver isso urgente!'},
         {title:'Ta dando outra localização?', description: 'Não poderia está assim!'},
         {title:'Meu veículo parou de funcionar', description: 'Não poderia está assim!'},
-      ]
-    }];
-    let list = new List('🛰️🚗 Olá, tudo bem? Eu sou a SegChat sua assistente 💁‍♀️, \r\n estou aqui para lhe dar um Help:','Clique aqui e Escolha uma Opção',sections,'Rastreamento','© SegSat');
-
-    client.sendMessage(msg.from, list);
-  } else if (msg.body !== null){
-
-    
-    //Tempo de espera de enviando mensagem
-    chat.sendStateTyping()    
-    await sleep(5000)
-    chat.clearState()
-    
-    dfResponse = await sendDialogFlow(msg.body, contact.number)
-    console.log(`--------------------Nova Mensagem--------------------`);
-    console.log(`Mensagem do cliente ${contact.number}: ${msg.body}`);
-    console.log(`Resposta do DialogFlow: ${dfResponse}`);
-    
-    const texto = dfResponse.replace(/(\r\n|\n|\r)/gm, "")
-    console.log(`Resposta do DialogFlow uma linha: ${texto}`);
-    
-    if(texto.replace(/(\r\n|\n|\r)/gm, "").split('[[').length >1){
+        ]
+      }];
+      let list = new List('🛰️🚗 Olá, tudo bem? Eu sou a SegChat sua assistente 💁‍♀️, \r\n estou aqui para lhe dar um Help:','Clique aqui e Escolha uma Opção',sections,'','© SegSat');
       
-      buttonCreate(msg.from,texto);
-
-    }else{
-      client.sendMessage(msg.from, texto);
+      client.sendMessage(msg.from, list);
+      
+    } else if (msg.body !== null){
+      
+      //Tempo de espera de enviando mensagem
+      chat.sendStateTyping()    
+      await sleep(5000)
+      chat.clearState()
+      
+      dfResponse = await sendDialogFlow(msg.body, contact.number)
+      console.log(`--------------------Nova Mensagem--------------------`);
+      console.log(`Mensagem do cliente ${contact.number}: ${msg.body}`);
+      console.log(`Resposta do DialogFlow: ${dfResponse}`);
+      
+      const texto = dfResponse.replace(/(\r\n|\n|\r)/gm, "")
+      console.log(`Resposta do DialogFlow uma linha: ${texto}`);
+      
+      if(texto.split('[[').length >1){
+        
+        buttonCreate(msg.from,texto);
+        
+      }else if (texto.split('##').length >1){
+        
+        listCreate(msg.from,texto);
+        
+      }else{
+        
+        client.sendMessage(msg.from, texto);
+      }
+    
     }
-    
-    
-    
-  }
 
 
   // if (msg.body !== null && msg.body.includes("Quero saber mais sobre o Método ZDG.")) {
@@ -198,6 +231,7 @@ console.log(msg)
   //   client.sendMessage(msg.from, list);
   // }
 
+  }
 });
 
 client.initialize();

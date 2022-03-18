@@ -1,7 +1,7 @@
 {
-  "name": "bot-zdg",
+  "name": "whatsappweb",
   "version": "1.0.0",
-  "description": "bot-zdg: based on Whatsapp API",
+  "description": "Segsat: based on Whatsapp API",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -12,7 +12,7 @@
     "whatsapp-api",
     "node.js"
   ],
-  "author": "Pedro",
+  "author": "Dayvson",
   "license": "MIT",
   "dependencies": {
     "axios": "^0.20.0",
