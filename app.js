@@ -77,10 +77,6 @@ const sendDialogFlow = async (mensagem, numero) => {
   // const res = await axios.post('http://localhost:3030/text_query', body, {headers:apiMoskit.headers})
 }
 
-noBotSend = [
-  {phoneNumber: "558184319706", timestamp: '123456784568'}
-]
-
 const buttonCreate = async (number, msg) => {
   const btns = msg.split('[[').map(btn => btn.split(']]')[0])
 
@@ -91,9 +87,9 @@ const buttonCreate = async (number, msg) => {
   btns.slice(1,5).forEach(item => buttons.push({body:item}))
   console.log(buttons)
   console.log("=================CRIANDO - BOTAO====================")
-  console.log(buttonBody,buttons,"-","Escolha uma opção")
+  console.log(buttonBody,buttons," ","Escolha uma opção")
 
-  const button = await new Buttons(buttonBody,buttons,"-","Escolha uma opção");
+  const button = await new Buttons(buttonBody,buttons," ","Escolha uma opção");
 
   client.sendMessage(number, button).then(response => {
     res.status(200).json({
@@ -134,34 +130,45 @@ const listCreate = async (number, msg) => {
       response: err
     });
   });
-
 }
+
+const sendImage = async (phone, msg) => {
+  const content = msg.split('#media:')
+
+  const number = phoneNumberFormatter(phone);
+  const caption = content[0];
+  let imagem;
+  let createButton;
+
+  if(content[1].split('[[').length >1){
+    imagemButton = content[1].split('[[')
+    imagem = imagemButton[0]
+    createButton = caption+"[["+imagemButton[1]
+  }
+  
+  imagem = imagem || content[1]
+
+  const media = MessageMedia.fromFilePath(imagem);
+  
+  if(createButton){
+    await client.sendMessage(number, media)
+    console.log("Criando botão")
+    await buttonCreate(number,createButton);
+  }else{
+    await client.sendMessage(number, media, {caption: caption})
+  }
+
+};
 
 client.on('message', async msg => {
   if (msg.type != "e2e_notification"){
-
+    
     console.log(msg)
     const chat = await msg.getChat()
     const contact = await msg.getContact()
     const name = contact.name || contact.pushname
     
-    const existInList = noBotSend.findIndex(number => number.phoneNumber == contact.number)
-    
-    if (msg.body !== null && chat.isGroup == false && existInList < 0) {
-      noBotSend.push({phoneNumber: contact.number, timestamp: msg.timestamp})
-      
-      let sections = [{title:'Opções',rows:[
-        {title:'Meu carro esta atrasado no APP', description: 'Não sei o que fazer, preciso de ajuda'},
-        {title:'Meu veiculo ta com posição atrasada!', description: 'Preciso resolver isso urgente!'},
-        {title:'Ta dando outra localização?', description: 'Não poderia está assim!'},
-        {title:'Meu veículo parou de funcionar', description: 'Não poderia está assim!'},
-        ]
-      }];
-      let list = new List('🛰️🚗 Olá, tudo bem? Eu sou a SegChat sua assistente 💁‍♀️, \r\n estou aqui para lhe dar um Help:','Clique aqui e Escolha uma Opção',sections,'','© SegSat');
-      
-      client.sendMessage(msg.from, list);
-      
-    } else if (msg.body !== null){
+    if (msg.body !== null){
       
       //Tempo de espera de enviando mensagem
       chat.sendStateTyping()    
@@ -176,13 +183,17 @@ client.on('message', async msg => {
       const texto = dfResponse.replace(/(\r\n|\n|\r)/gm, "")
       console.log(`Resposta do DialogFlow uma linha: ${texto}`);
       
-      if(texto.split('[[').length >1){
+      if (texto.split('#media:').length >1){
         
-        buttonCreate(msg.from,texto);
+        await sendImage(msg.from,texto)
+        
+      }else if(texto.split('[[').length >1){
+        
+        await buttonCreate(msg.from,texto);
         
       }else if (texto.split('##').length >1){
         
-        listCreate(msg.from,texto);
+        await listCreate(msg.from,texto);
         
       }else{
         
