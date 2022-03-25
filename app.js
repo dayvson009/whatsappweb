@@ -80,7 +80,7 @@ const sendDialogFlow = async (mensagem, numero) => {
 const buttonCreate = async (number, msg) => {
   const btns = msg.split('[[').map(btn => btn.split(']]')[0])
 
-  buttonBody = btns[0]
+  buttonBody = textBreakLine(btns[0])
   
   const buttons = []
 
@@ -108,8 +108,8 @@ const buttonCreate = async (number, msg) => {
 const listCreate = async (number, msg) => {
   const lista = msg.split('##')
 
-  listBody = lista[0]
-  
+  listBody = textBreakLine(lista[0])
+  console.log(`${listBody}`)
   const listItens = []
 
   lista.slice(1,lista.length).forEach(item => listItens.push({title:item, description: ''}))
@@ -120,12 +120,12 @@ const listCreate = async (number, msg) => {
   let list = await new List(listBody,'Clique e Escolha uma Opção',sections,'','© SegSat');
 
   client.sendMessage(number, list).then(response => {
-    res.status(200).json({
+    response.status(200).json({
       status: true,
       response: response
     });
   }).catch(err => {
-    res.status(500).json({
+    response.status(500).json({
       status: false,
       response: err
     });
@@ -160,6 +160,9 @@ const sendImage = async (phone, msg) => {
 
 };
 
+const textOneLine = text => text.replace(/(\r\n|\n|\r)/gm, "§")
+const textBreakLine = text => text.replace(/(§§|§|§§§)/gm, "\r\n")
+
 client.on('message', async msg => {
   if (msg.type != "e2e_notification"){
     
@@ -175,29 +178,29 @@ client.on('message', async msg => {
       await sleep(5000)
       chat.clearState()
       
-      dfResponse = await sendDialogFlow(msg.body, contact.number)
+      const responseDialogFLow = await sendDialogFlow(msg.body, contact.number)
+
       console.log(`--------------------Nova Mensagem--------------------`);
       console.log(`Mensagem do cliente ${contact.number}: ${msg.body}`);
-      console.log(`Resposta do DialogFlow: ${dfResponse}`);
+      console.log(`Resposta do DialogFlow: ${responseDialogFLow}`);
       
-      const texto = dfResponse.replace(/(\r\n|\n|\r)/gm, "")
-      console.log(`Resposta do DialogFlow uma linha: ${texto}`);
-      
-      if (texto.split('#media:').length >1){
+      const responseDialogFLowOneLine = textOneLine(responseDialogFLow)
+
+      if (responseDialogFLowOneLine.split('#media:').length >1){
         
-        await sendImage(msg.from,texto)
+        await sendImage(msg.from,responseDialogFLowOneLine)
         
-      }else if(texto.split('[[').length >1){
+      }else if(responseDialogFLowOneLine.split('[[').length >1){
         
-        await buttonCreate(msg.from,texto);
+        await buttonCreate(msg.from,responseDialogFLowOneLine);
         
-      }else if (texto.split('##').length >1){
+      }else if (responseDialogFLowOneLine.split('##').length >1){
         
-        await listCreate(msg.from,texto);
+        await listCreate(msg.from,responseDialogFLowOneLine);
         
       }else{
         
-        client.sendMessage(msg.from, texto);
+        client.sendMessage(msg.from, responseDialogFLow);
       }
     
     }
