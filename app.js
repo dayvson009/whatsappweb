@@ -10,7 +10,7 @@ const fileUpload = require('express-fileupload');
 const axios = require('axios');
 const mime = require('mime-types');
 
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 3020;
 
 const app = express();
 const server = http.createServer(app);
@@ -54,119 +54,112 @@ const client = new Client({
   session: sessionCfg
 });
 
+
+/** ----------------- INICIO MEU CÓDIGO --------------- DV
+ * String.prototype Cria um Metodo de uma String
+ * A função é chamada da seguinte maneira: string.funcao(param)
+ * Nesta função ele da um split em tags e retorna o conteúdo de dentro
+ */
+// String.prototype.getContentTag = function(tag) {
+
+//   let content = String(this).split(`<${tag}>`).slice(1)
+//   content = content.map(item => item.split(`</${tag}>`)[0])
+//   return content.length > 1 ? content : content[0]
+
+// }
+
+const getContentTag = (msg, tag) => {
+  let content = msg.split(`<${tag}>`).slice(1)
+  content = content.map(item => item.split(`</${tag}>`)[0])
+  return content.length > 1 ? content : content[0]
+}
+
+/**
+ * Sleep é uma função para dar um pause temporário
+ */
 const sleep = (ms) => new Promise((resolve)=>setTimeout(resolve, ms))
 
+/**
+ * Aqui Envia a mensagem para o DialogFlow, e Retorna a resposta do mesmo
+ */
 const sendDialogFlow = async (mensagem, numero) => {
-  // const apiMoskit = {
-  //   urlMoskitContrato : "https://ws-crm.segsat.com/projeto/readByFilialContrato"
-  //   ,urlMoskitDadosPessoais: "https://ws-crm.segsat.com/contato/"
-  const body = {
-          "text": mensagem,
-          "userId": numero
-        }
 
-  const headers =  {
-        'Token': process.env.TOKENMOSKIT,
-        'content-type': 'application/json'
-    }
+  const body = {
+    "text": mensagem,
+    "userId": numero
+  }
 
   const resp = await axios.post('http://localhost:3030/text_query', body)
 
   return resp.data
 
-  // const res = await axios.post('http://localhost:3030/text_query', body, {headers:apiMoskit.headers})
 }
 
-const buttonCreate = async (number, msg) => {
-  const btns = msg.split('[[').map(btn => btn.split(']]')[0])
+/**
+ * Função para criar botão de whatsapp
+ */
+const sendButton = async (phone, msg) => {
 
-  buttonBody = textBreakLine(btns[0])
-  
-  const buttons = []
+  const buttonContent = getContentTag(msg,'buttonContent')
+  const buttonTitle = getContentTag(msg,'buttonTitle') || ""
+  const buttonFooter = getContentTag(msg,'buttonFooter') || ""
+  const buttons = getContentTag(msg,'button') || ""
 
-  btns.slice(1,5).forEach(item => buttons.push({body:item}))
-  console.log(buttons)
-  console.log("=================CRIANDO - BOTAO====================")
-  console.log(buttonBody,buttons," ","Escolha uma opção")
-
-  const button = await new Buttons(buttonBody,buttons," ","Escolha uma opção");
-
-  client.sendMessage(number, button).then(response => {
-    res.status(200).json({
-      status: true,
-      response: response
-    });
-  }).catch(err => {
-    res.status(500).json({
-      status: false,
-      response: err
-    });
-  });
-
-}
-
-const listCreate = async (number, msg) => {
-  const lista = msg.split('##')
-
-  listBody = textBreakLine(lista[0])
-  console.log(`${listBody}`)
-  const listItens = []
-
-  lista.slice(1,lista.length).forEach(item => listItens.push({title:item, description: ''}))
-  console.log("===============CRIANDO - LISTA======================")
-
-  let sections = [{title:'Opções',rows:listItens}];
-
-  let list = await new List(listBody,'Clique e Escolha uma Opção',sections,'','© SegSat');
-
-  client.sendMessage(number, list).then(response => {
-    response.status(200).json({
-      status: true,
-      response: response
-    });
-  }).catch(err => {
-    response.status(500).json({
-      status: false,
-      response: err
-    });
-  });
-}
-
-const sendImage = async (phone, msg) => {
-  const content = msg.split('#media:')
+  const listButtons = buttons.map(item => ({body:item}))
+  const button = new Buttons(buttonContent,listButtons,buttonTitle,buttonFooter);
 
   const number = phoneNumberFormatter(phone);
-  const caption = content[0];
-  let imagem;
-  let createButton;
 
-  if(content[1].split('[[').length >1){
-    imagemButton = content[1].split('[[')
-    imagem = imagemButton[0]
-    createButton = caption+"[["+imagemButton[1]
-  }
-  
-  imagem = imagem || content[1]
+  await client.sendMessage(number, button)
 
-  const media = MessageMedia.fromFilePath(imagem);
-  
-  if(createButton){
-    await client.sendMessage(number, media)
-    console.log("Criando botão")
-    await buttonCreate(number,createButton);
-  }else{
-    await client.sendMessage(number, media, {caption: caption})
-  }
+}
 
+/**
+ * Função para criar Lista de whatsapp
+ */
+const sendList = async (phone, msg) => {
+
+  const listContent = getContentTag(msg,'listContent')
+  const listAction = getContentTag(msg,'listAction') || "CLique aqui"
+  const listHeaderItens = getContentTag(msg,'listHeaderItens') || ""
+  const lists = getContentTag(msg,'list') || ""
+  const listSub = getContentTag(msg,'listSub') || ""
+  const listTitle = getContentTag(msg,'listTitle') || ""
+  const listFooter = getContentTag(msg,'listFooter') || ""
+
+  const listItens = [{title:listHeaderItens,rows:[]}]
+  listItens.rows = lists.map((item, index) => ({title:item, description: listSub[index]}))
+
+  const list = await new List(listContent,listAction,listItens,listTitle,listFooter);
+
+  const number = phoneNumberFormatter(phone);
+
+  await client.sendMessage(number, list)
+}
+
+/**
+ * Função para enviar imagem para whatsapp // TODO poderia ser Arquivo mas preciso entender melhor
+ */
+const sendImage = async (phone, msg) => {
+
+  const imageUrl = getContentTag(msg,'imageUrl')
+  const imageCaption = getContentTag(msg,'imageCaption') || ""
+
+  const number = phoneNumberFormatter(phone);
+
+  const media = await MessageMedia.fromFilePath(imageUrl);
+
+  await client.sendMessage(number, media, { caption: imageCaption })
 };
 
+// Talvez não vamos precisar disso, mas deixa aqui - serve para remover quebra de linhas e substitui por §
 const textOneLine = text => text.replace(/(\r\n|\n|\r)/gm, "§")
+// Aqui faz o inverso pega tudo que tiver § e quebra linha, foi uma gambiarra que fiz rsrsrs
 const textBreakLine = text => text.replace(/(§§|§|§§§)/gm, "\r\n")
 
 client.on('message', async msg => {
   if (msg.type != "e2e_notification"){
     
-    console.log(msg)
     const chat = await msg.getChat()
     const contact = await msg.getContact()
     const name = contact.name || contact.pushname
@@ -175,34 +168,26 @@ client.on('message', async msg => {
       
       //Tempo de espera de enviando mensagem
       chat.sendStateTyping()    
-      await sleep(5000)
+      await sleep(3000)
       chat.clearState()
       
-      const responseDialogFLow = await sendDialogFlow(msg.body, contact.number)
+      const responseDialogFLow = `${await sendDialogFlow(msg.body, contact.number)}`
 
       console.log(`--------------------Nova Mensagem--------------------`);
       console.log(`Mensagem do cliente ${contact.number}: ${msg.body}`);
       console.log(`Resposta do DialogFlow: ${responseDialogFLow}`);
+      console.log(typeof responseDialogFLow);
+      console.log(responseDialogFLow);
       
       const responseDialogFLowOneLine = textOneLine(responseDialogFLow)
 
-      if (responseDialogFLowOneLine.split('#media:').length >1){
-        
-        await sendImage(msg.from,responseDialogFLowOneLine)
-        
-      }else if(responseDialogFLowOneLine.split('[[').length >1){
-        
-        await buttonCreate(msg.from,responseDialogFLowOneLine);
-        
-      }else if (responseDialogFLowOneLine.split('##').length >1){
-        
-        await listCreate(msg.from,responseDialogFLowOneLine);
-        
-      }else{
-        
-        client.sendMessage(msg.from, responseDialogFLow);
-      }
-    
+      await responseDialogFLow.includes('<imagemCreate>') ? sendImage(msg.from, responseDialogFLow) : ""
+      await responseDialogFLow.includes('<text>')         ? msg.reply(msg.from, getContentTag(responseDialogFLow,'text')) : ""
+      await responseDialogFLow.includes('<buttonCreate>') ? sendButton(msg.from, responseDialogFLow) : ""
+      await responseDialogFLow.includes('<listCreate>')   ? sendList(msg.from, responseDialogFLow) : ""
+      !responseDialogFLow.includes("</") ? msg.reply(responseDialogFLow) : ""
+
+      console.log('FIM')
     }
 
 
