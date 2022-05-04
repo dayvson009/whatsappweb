@@ -1,29 +1,35 @@
 {
-  "name": "whatsappweb",
+  "name": "bot-zdg",
   "version": "1.0.0",
-  "description": "Segsat: based on Whatsapp API",
+  "description": "bot-zdg: based on Whatsapp API",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "start:dev": "nodemon app.js",
+    "start": "node botzdg.js",
+    "start:dev": "nodemon botzdg.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "whatsapp-api",
     "node.js"
   ],
-  "author": "Dayvson",
+  "author": "Pedro",
   "license": "MIT",
   "dependencies": {
+    "@google-cloud/dialogflow": "^4.6.0",
+    "actions-on-google": "^2.4.1",
     "axios": "^0.20.0",
-    "express": "^4.17.1",
+    "dialogflow-fulfillment": "^0.6.1",
+    "express": "^4.18.1",
     "express-fileupload": "^1.2.0",
     "express-validator": "^6.9.2",
     "http": "0.0.1-security",
     "mime-types": "^2.1.32",
+    "mysql2": "^2.3.3",
     "qrcode": "^1.4.4",
+    "qrcode-terminal": "^0.12.0",
     "socket.io": "2.3.0",
-    "whatsapp-web.js": "^1.15.8"
+    "util": "^0.12.4",
+    "whatsapp-web.js": "^1.16.6"
   },
   "devDependencies": {
     "nodemon": "^2.0.14"
