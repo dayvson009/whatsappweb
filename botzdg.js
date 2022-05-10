@@ -325,7 +325,7 @@ const requestGET = async (phone, msg) => {
   console.log(message)
   console.log(message.data)
 
-  console.log("Enviando imagem", new Date())
+  console.log("Enviando GET", new Date())
   await client.sendMessage(number, message.data)
 
 }
@@ -342,7 +342,7 @@ const requestPOST = async (phone, msg) => {
   console.log(message)
   console.log(message.data)
 
-  console.log("Enviando imagem", new Date())
+  console.log("Enviando POST", new Date())
   await client.sendMessage(number, message.data)
 
 }
@@ -374,7 +374,7 @@ const sendButton = async (phone, msg) => {
 const sendList = async (phone, msg) => {
 
   const listContent = getContentTag(msg,'listContent')
-  const listAction = getContentTag(msg,'listAction') || "CLique aqui"
+  const listAction = getContentTag(msg,'listAction') || "Clique aqui"
   const listHeaderItens = getContentTag(msg,'listHeaderItens') || ""
   const lists = getContentTag(msg,'list') || ""
   const listSub = getContentTag(msg,'listSub') || false
@@ -427,6 +427,8 @@ client.on('message', async msg => {
     const contact = await msg.getContact()
     const name = contact.name || contact.pushname
     
+    console.log("============== CONTACT ===================")
+    console.log(msg)
     console.log("============== CONTACT ===================")
     console.log(contact)
     console.log("================ CHAT ====================")

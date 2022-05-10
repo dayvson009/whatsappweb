@@ -95,9 +95,9 @@ Lista limpa:
 Vamos implementar o metódo POST e GET também já vindo do Dialogflow da seguinte maneira:
 
 ```
-<get>https://url/endpoint</get>
-<post>https://url/endpoint</post>
-<postJson>{key: value}</postJson>
+<GET>https://url/endpoint</GET>
+<POST>https://url/endpoint</post>
+<POSTDATA>{key: value}</POSTDATA>
 ```
 
 Dessa forma conseguiremos obter o retorno esperado de uma outra aplicação qualquer, tornando essa aqui independente facilitando futuras manutenções
